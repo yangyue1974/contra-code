@@ -65,8 +65,21 @@ export class GamePanelViewProvider implements vscode.WebviewViewProvider {
   </style>
 </head>
 <body>
-  <canvas id="game"></canvas>
-  <script>window.__BGM_URL__ = "${bgmUri}";</script>
+  <canvas id="game" tabindex="0"></canvas>
+  <script>
+    window.__BGM_URL__ = "${bgmUri}";
+    // Ensure canvas captures keyboard focus
+    const c = document.getElementById('game');
+    c.focus();
+    c.addEventListener('click', () => c.focus());
+    // Prevent VS Code from intercepting game keys
+    window.addEventListener('keydown', (e) => {
+      const gameKeys = ['KeyW','KeyA','KeyS','KeyD','KeyZ','KeyJ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','Enter','Escape'];
+      if (gameKeys.includes(e.code)) {
+        e.stopPropagation();
+      }
+    }, true);
+  </script>
   <script src="${scriptUri}"></script>
 </body>
 </html>`;

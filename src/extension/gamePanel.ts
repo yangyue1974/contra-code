@@ -95,8 +95,19 @@ export class GamePanel {
   </style>
 </head>
 <body>
-  <canvas id="game"></canvas>
-  <script>window.__BGM_URL__ = "${bgmUri}";</script>
+  <canvas id="game" tabindex="0"></canvas>
+  <script>
+    window.__BGM_URL__ = "${bgmUri}";
+    const c = document.getElementById('game');
+    c.focus();
+    c.addEventListener('click', () => c.focus());
+    window.addEventListener('keydown', (e) => {
+      const gameKeys = ['KeyW','KeyA','KeyS','KeyD','KeyZ','KeyJ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','Enter','Escape'];
+      if (gameKeys.includes(e.code)) {
+        e.stopPropagation();
+      }
+    }, true);
+  </script>
   <script src="${scriptUri}"></script>
 </body>
 </html>`;
