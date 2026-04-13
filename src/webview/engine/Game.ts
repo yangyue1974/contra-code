@@ -121,6 +121,7 @@ export class Game {
 
   private startPlaying() {
     this.state = 'playing';
+    this.audio.startMusic();
     this.terrain.reset();
     this.spawner.reset();
     this.score.reset();

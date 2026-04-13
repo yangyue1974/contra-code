@@ -1,7 +1,11 @@
+declare const window: Window & { __BGM_URL__?: string };
+
 export class AudioManager {
   private audioCtx: AudioContext | null = null;
   private musicVolume = 0.5;
   private sfxVolume = 0.7;
+  private bgmElement: HTMLAudioElement | null = null;
+  private bgmStarted = false;
   enabled = true;
 
   private getCtx(): AudioContext {
@@ -11,8 +15,34 @@ export class AudioManager {
     return this.audioCtx;
   }
 
-  setMusicVolume(v: number) { this.musicVolume = v; }
+  setMusicVolume(v: number) {
+    this.musicVolume = v;
+    if (this.bgmElement) {
+      this.bgmElement.volume = v;
+    }
+  }
+
   setSfxVolume(v: number) { this.sfxVolume = v; }
+
+  startMusic() {
+    if (this.bgmStarted || !this.enabled) return;
+    const url = window.__BGM_URL__;
+    if (!url) return;
+
+    this.bgmElement = new Audio(url);
+    this.bgmElement.loop = true;
+    this.bgmElement.volume = this.musicVolume;
+    this.bgmElement.play().catch(() => {});
+    this.bgmStarted = true;
+  }
+
+  stopMusic() {
+    if (this.bgmElement) {
+      this.bgmElement.pause();
+      this.bgmElement.currentTime = 0;
+      this.bgmStarted = false;
+    }
+  }
 
   playSfx(type: 'shoot' | 'jump' | 'kill' | 'die' | 'boss') {
     if (!this.enabled) return;

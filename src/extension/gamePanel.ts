@@ -51,6 +51,7 @@ export class GamePanel {
         retainContextWhenHidden: true,
         localResourceRoots: [
           vscode.Uri.joinPath(context.extensionUri, 'dist', 'webview'),
+          vscode.Uri.joinPath(context.extensionUri, 'media'),
         ],
       }
     );
@@ -77,6 +78,9 @@ export class GamePanel {
     const scriptUri = this.panel.webview.asWebviewUri(
       vscode.Uri.joinPath(this.extensionUri, 'dist', 'webview', 'main.js')
     );
+    const bgmUri = this.panel.webview.asWebviewUri(
+      vscode.Uri.joinPath(this.extensionUri, 'media', 'bgm.mp3')
+    );
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -92,6 +96,7 @@ export class GamePanel {
 </head>
 <body>
   <canvas id="game"></canvas>
+  <script>window.__BGM_URL__ = "${bgmUri}";</script>
   <script src="${scriptUri}"></script>
 </body>
 </html>`;
