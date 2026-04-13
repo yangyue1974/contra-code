@@ -105,9 +105,8 @@ export class GamePanel {
       const gameKeys = ['KeyW','KeyA','KeyS','KeyD','KeyZ','KeyJ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','Enter','Escape'];
       if (gameKeys.includes(e.code)) {
         e.preventDefault();
-        e.stopPropagation();
       }
-    }, true);
+    });
   </script>
   <script src="${scriptUri}"></script>
 </body>

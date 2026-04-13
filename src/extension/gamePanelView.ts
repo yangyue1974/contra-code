@@ -72,14 +72,13 @@ export class GamePanelViewProvider implements vscode.WebviewViewProvider {
     const c = document.getElementById('game');
     c.focus();
     c.addEventListener('click', () => c.focus());
-    // Prevent VS Code from intercepting game keys
+    // Prevent default browser behavior for game keys (but don't stop propagation — game needs the events)
     window.addEventListener('keydown', (e) => {
       const gameKeys = ['KeyW','KeyA','KeyS','KeyD','KeyZ','KeyJ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','Enter','Escape'];
       if (gameKeys.includes(e.code)) {
         e.preventDefault();
-        e.stopPropagation();
       }
-    }, true);
+    });
   </script>
   <script src="${scriptUri}"></script>
 </body>
