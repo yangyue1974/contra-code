@@ -61,7 +61,7 @@ export class GamePanelViewProvider implements vscode.WebviewViewProvider {
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0a; }
-    canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+    canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; outline: none; }
   </style>
 </head>
 <body>
@@ -76,6 +76,7 @@ export class GamePanelViewProvider implements vscode.WebviewViewProvider {
     window.addEventListener('keydown', (e) => {
       const gameKeys = ['KeyW','KeyA','KeyS','KeyD','KeyZ','KeyJ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','Enter','Escape'];
       if (gameKeys.includes(e.code)) {
+        e.preventDefault();
         e.stopPropagation();
       }
     }, true);
