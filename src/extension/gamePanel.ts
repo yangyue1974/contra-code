@@ -1,7 +1,11 @@
 import * as vscode from 'vscode';
+import { getConfig } from './config';
+
+type DisposeCallback = () => void;
 
 export class GamePanel {
   private static instance: GamePanel | undefined;
+  private static disposeCallbacks: DisposeCallback[] = [];
   private readonly panel: vscode.WebviewPanel;
   private readonly extensionUri: vscode.Uri;
 
@@ -13,7 +17,23 @@ export class GamePanel {
 
     this.panel.onDidDispose(() => {
       GamePanel.instance = undefined;
+      GamePanel.disposeCallbacks.forEach(cb => cb());
     });
+
+    // Send initial config after a short delay to ensure webview is ready
+    const config = getConfig();
+    setTimeout(() => {
+      this.panel.webview.postMessage({
+        type: 'setNickname',
+        nickname: config.nickname || 'Anonymous',
+      });
+      this.panel.webview.postMessage({
+        type: 'setAudioConfig',
+        enabled: config.audioEnabled,
+        musicVolume: config.musicVolume,
+        sfxVolume: config.sfxVolume,
+      });
+    }, 500);
   }
 
   static createOrShow(context: vscode.ExtensionContext) {
@@ -43,6 +63,14 @@ export class GamePanel {
       GamePanel.instance.panel.dispose();
       GamePanel.instance = undefined;
     }
+  }
+
+  static sendMessage(message: any) {
+    GamePanel.instance?.panel.webview.postMessage(message);
+  }
+
+  static onDispose(callback: DisposeCallback) {
+    GamePanel.disposeCallbacks.push(callback);
   }
 
   private getHtml(): string {
