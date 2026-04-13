@@ -115,7 +115,7 @@ export class Game {
   }
 
   private initPlayer() {
-    this.player = new Player(200, this.groundY - 32, this.input);
+    this.player = new Player(this.camera.x + this.canvas.width * 0.3, this.groundY - 32, this.input);
     this.player.onGround = true;
   }
 
@@ -169,13 +169,21 @@ export class Game {
     this.terrain.difficulty = difficultyFactor;
     this.camera.scrollSpeed = 80 + difficultyFactor * 60;
 
-    // Player keeps up with camera
-    if (this.player.x < this.camera.x + 50) {
-      this.player.x = this.camera.x + 50;
-    }
+    // Player auto-advances with camera scroll
+    this.player.x += this.camera.scrollSpeed * dt;
 
-    // Player update
+    // Player update (left/right keys adjust relative to auto-scroll)
     this.player.update(dt);
+
+    // Clamp player within screen bounds
+    const screenLeft = this.camera.x + 30;
+    const screenRight = this.camera.x + this.camera.width - 60;
+    if (this.player.x < screenLeft) {
+      this.player.x = screenLeft;
+    }
+    if (this.player.x > screenRight) {
+      this.player.x = screenRight;
+    }
     applyGravity(this.player, dt);
 
     // Terrain

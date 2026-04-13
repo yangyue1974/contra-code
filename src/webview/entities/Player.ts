@@ -19,14 +19,18 @@ export class Player extends Entity {
   }
 
   update(dt: number) {
-    if (this.input.isDown('ArrowLeft') || this.input.isDown('KeyA')) {
+    const left = this.input.isDown('ArrowLeft') || this.input.isDown('KeyA');
+    const right = this.input.isDown('ArrowRight') || this.input.isDown('KeyD');
+
+    if (left && !right) {
       this.vx = -MOVE_SPEED;
       this.facingRight = false;
+    } else if (right && !left) {
+      this.vx = MOVE_SPEED * 0.5; // slower forward (already auto-scrolling)
+      this.facingRight = true;
     } else {
       this.vx = 0;
-      if (!this.input.isDown('ArrowRight') && !this.input.isDown('KeyD')) {
-        this.facingRight = true;
-      }
+      this.facingRight = true;
     }
 
     if (this.input.justPressed('Space') && this.jumpsRemaining > 0) {
