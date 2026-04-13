@@ -23,15 +23,28 @@ const webviewConfig = {
   target: 'chrome110',
 };
 
+const overlayConfig = {
+  entryPoints: ['src/overlay/inject.ts'],
+  bundle: true,
+  outfile: 'dist/overlay/inject.js',
+  format: 'iife',
+  platform: 'browser',
+  sourcemap: false,
+  target: 'chrome110',
+  minify: true,
+};
+
 if (isWatch) {
   const extCtx = await esbuild.context(extensionConfig);
   const webCtx = await esbuild.context(webviewConfig);
-  await Promise.all([extCtx.watch(), webCtx.watch()]);
+  const overlayCtx = await esbuild.context(overlayConfig);
+  await Promise.all([extCtx.watch(), webCtx.watch(), overlayCtx.watch()]);
   console.log('Watching for changes...');
 } else {
   await Promise.all([
     esbuild.build(extensionConfig),
     esbuild.build(webviewConfig),
+    esbuild.build(overlayConfig),
   ]);
   console.log('Build complete.');
 }

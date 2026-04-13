@@ -12,7 +12,9 @@
     "commands": [
       { "command": "contraCode.startGame", "title": "Contra Code: Start Game" },
       { "command": "contraCode.stopGame", "title": "Contra Code: Stop Game" },
-      { "command": "contraCode.showLeaderboard", "title": "Contra Code: Show Leaderboard" }
+      { "command": "contraCode.showLeaderboard", "title": "Contra Code: Show Leaderboard" },
+      { "command": "contraCode.enableOverlay", "title": "Contra Code: Enable Overlay Mode" },
+      { "command": "contraCode.disableOverlay", "title": "Contra Code: Disable Overlay Mode" }
     ],
     "configuration": {
       "title": "Contra Code",
