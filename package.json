@@ -1,0 +1,42 @@
+{
+  "name": "contra-code",
+  "displayName": "Contra Code",
+  "description": "Kill time between builds — Contra-style. A pixel-art run-and-gun game overlay for VS Code.",
+  "version": "0.1.0",
+  "publisher": "contra-code",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./dist/extension/extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "contraCode.startGame", "title": "Contra Code: Start Game" },
+      { "command": "contraCode.stopGame", "title": "Contra Code: Stop Game" },
+      { "command": "contraCode.showLeaderboard", "title": "Contra Code: Show Leaderboard" }
+    ],
+    "configuration": {
+      "title": "Contra Code",
+      "properties": {
+        "contraCode.enabled": { "type": "boolean", "default": true, "description": "Enable/disable the game" },
+        "contraCode.smartDetection": { "type": "boolean", "default": true, "description": "Show notification when builds/tests are running" },
+        "contraCode.audioEnabled": { "type": "boolean", "default": true, "description": "Enable game audio" },
+        "contraCode.musicVolume": { "type": "number", "default": 0.5, "minimum": 0, "maximum": 1, "description": "Background music volume" },
+        "contraCode.sfxVolume": { "type": "number", "default": 0.7, "minimum": 0, "maximum": 1, "description": "Sound effects volume" },
+        "contraCode.nickname": { "type": "string", "default": "", "maxLength": 20, "description": "Nickname for the leaderboard" }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.115.0",
+    "esbuild": "^0.28.0",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.4"
+  }
+}
