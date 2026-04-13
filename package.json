@@ -14,8 +14,27 @@
       { "command": "contraCode.stopGame", "title": "Contra Code: Stop Game" },
       { "command": "contraCode.showLeaderboard", "title": "Contra Code: Show Leaderboard" },
       { "command": "contraCode.enableOverlay", "title": "Contra Code: Enable Overlay Mode" },
-      { "command": "contraCode.disableOverlay", "title": "Contra Code: Disable Overlay Mode" }
+      { "command": "contraCode.disableOverlay", "title": "Contra Code: Disable Overlay Mode" },
+      { "command": "contraCode.focusGame", "title": "Contra Code: Focus Game" }
     ],
+    "viewsContainers": {
+      "panel": [
+        {
+          "id": "contraCodePanel",
+          "title": "Contra Code",
+          "icon": "$(game)"
+        }
+      ]
+    },
+    "views": {
+      "contraCodePanel": [
+        {
+          "id": "contraCode.gameView",
+          "name": "Contra Code",
+          "type": "webview"
+        }
+      ]
+    },
     "configuration": {
       "title": "Contra Code",
       "properties": {

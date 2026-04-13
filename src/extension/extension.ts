@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { GamePanel } from './gamePanel';
+import { GamePanelViewProvider } from './gamePanelView';
 import { StatusBar } from './statusBar';
 import { WaitDetector } from './waitDetector';
 import { getConfig } from './config';
@@ -9,6 +10,20 @@ let statusBar: StatusBar;
 
 export function activate(context: vscode.ExtensionContext) {
   statusBar = new StatusBar();
+
+  // Register the bottom panel game view
+  const gameViewProvider = new GamePanelViewProvider(context.extensionUri);
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider(GamePanelViewProvider.viewType, gameViewProvider, {
+      webviewOptions: { retainContextWhenHidden: true }
+    })
+  );
+
+  // Focus game command - reveals the panel view
+  const focusCmd = vscode.commands.registerCommand('contraCode.focusGame', () => {
+    vscode.commands.executeCommand('contraCode.gameView.focus');
+  });
+  context.subscriptions.push(focusCmd);
 
   const startCmd = vscode.commands.registerCommand('contraCode.startGame', () => {
     if (!getConfig().enabled) {

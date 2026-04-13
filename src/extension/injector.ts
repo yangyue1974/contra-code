@@ -23,7 +23,13 @@ export function isInjected(): boolean {
 export function injectOverlay(extensionPath: string): { success: boolean; error?: string } {
   try {
     const htmlPath = getWorkbenchHtmlPath();
+    const backupPath = htmlPath + '.contra-backup';
     let content = fs.readFileSync(htmlPath, 'utf-8');
+
+    // Save backup of original (only if no backup exists yet)
+    if (!fs.existsSync(backupPath)) {
+      fs.writeFileSync(backupPath, content, 'utf-8');
+    }
 
     // Remove old injection if exists
     if (content.includes(INJECT_MARKER_START)) {
@@ -34,9 +40,19 @@ export function injectOverlay(extensionPath: string): { success: boolean; error?
     const scriptPath = path.join(extensionPath, 'dist', 'overlay', 'inject.js');
     const scriptContent = fs.readFileSync(scriptPath, 'utf-8');
 
-    // Inject before </body>
-    const injection = `${INJECT_MARKER_START}\n<script>\n${scriptContent}\n</script>\n${INJECT_MARKER_END}`;
-    content = content.replace('</body>', `${injection}\n</body>`);
+    // Remove Trusted Types CSP that blocks inline scripts
+    content = content.replace(/require-trusted-types-for[^;]*;/g, '');
+    content = content.replace(/trusted-types[^"]*;/g, '');
+
+    // Inject after the last </script> tag (after workbench.js loads)
+    const injection = `\n${INJECT_MARKER_START}\n<script>\n${scriptContent}\n</script>\n${INJECT_MARKER_END}`;
+    const lastScriptClose = content.lastIndexOf('</script>');
+    if (lastScriptClose !== -1) {
+      const insertPos = lastScriptClose + '</script>'.length;
+      content = content.substring(0, insertPos) + injection + content.substring(insertPos);
+    } else {
+      content = content.replace('</html>', `${injection}\n</html>`);
+    }
 
     fs.writeFileSync(htmlPath, content, 'utf-8');
     return { success: true };
@@ -48,12 +64,21 @@ export function injectOverlay(extensionPath: string): { success: boolean; error?
 export function uninjectOverlay(): { success: boolean; error?: string } {
   try {
     const htmlPath = getWorkbenchHtmlPath();
-    let content = fs.readFileSync(htmlPath, 'utf-8');
+    const backupPath = htmlPath + '.contra-backup';
 
-    if (!content.includes(INJECT_MARKER_START)) {
-      return { success: true }; // nothing to remove
+    // Restore from backup if available (cleanest approach)
+    if (fs.existsSync(backupPath)) {
+      const original = fs.readFileSync(backupPath, 'utf-8');
+      fs.writeFileSync(htmlPath, original, 'utf-8');
+      fs.unlinkSync(backupPath);
+      return { success: true };
     }
 
+    // Fallback: manual removal
+    let content = fs.readFileSync(htmlPath, 'utf-8');
+    if (!content.includes(INJECT_MARKER_START)) {
+      return { success: true };
+    }
     content = removeInjection(content);
     fs.writeFileSync(htmlPath, content, 'utf-8');
     return { success: true };

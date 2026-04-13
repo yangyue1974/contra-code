@@ -1,0 +1,74 @@
+import * as vscode from 'vscode';
+import { getConfig } from './config';
+
+export class GamePanelViewProvider implements vscode.WebviewViewProvider {
+  public static readonly viewType = 'contraCode.gameView';
+  private view?: vscode.WebviewView;
+
+  constructor(private readonly extensionUri: vscode.Uri) {}
+
+  resolveWebviewView(
+    webviewView: vscode.WebviewView,
+    _context: vscode.WebviewViewResolveContext,
+    _token: vscode.CancellationToken,
+  ) {
+    this.view = webviewView;
+
+    webviewView.webview.options = {
+      enableScripts: true,
+      localResourceRoots: [
+        vscode.Uri.joinPath(this.extensionUri, 'dist', 'webview'),
+        vscode.Uri.joinPath(this.extensionUri, 'media'),
+      ],
+    };
+
+    webviewView.webview.html = this.getHtml(webviewView.webview);
+
+    // Send config once webview is ready
+    const config = getConfig();
+    setTimeout(() => {
+      webviewView.webview.postMessage({
+        type: 'setNickname',
+        nickname: config.nickname || 'Anonymous',
+      });
+      webviewView.webview.postMessage({
+        type: 'setAudioConfig',
+        enabled: config.audioEnabled,
+        musicVolume: config.musicVolume,
+        sfxVolume: config.sfxVolume,
+      });
+    }, 500);
+  }
+
+  public sendMessage(message: any) {
+    this.view?.webview.postMessage(message);
+  }
+
+  private getHtml(webview: vscode.Webview): string {
+    const scriptUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this.extensionUri, 'dist', 'webview', 'main.js')
+    );
+    const bgmUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this.extensionUri, 'media', 'bgm.mp3')
+    );
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contra Code</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0a; }
+    canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <script>window.__BGM_URL__ = "${bgmUri}";</script>
+  <script src="${scriptUri}"></script>
+</body>
+</html>`;
+  }
+}
