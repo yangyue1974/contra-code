@@ -14,6 +14,10 @@ import { Spawner } from '../world/Spawner';
 import { ScoreSystem } from '../systems/Score';
 import { resolveEntityPlatform, checkEntityCollision } from '../systems/Collision';
 import { PLAYER_STAND, ENEMY_SOLDIER, ENEMY_FLYER, ENEMY_TURRET, ENEMY_BOSS, BULLET_PLAYER, BULLET_ENEMY } from '../sprites/SpriteData';
+import { LeaderboardAPI } from '../network/LeaderboardAPI';
+import { DeathScreen } from '../ui/DeathScreen';
+import { LeaderboardUI } from '../ui/LeaderboardUI';
+import { AudioManager } from '../audio/AudioManager';
 
 export type GameState = 'title' | 'playing' | 'dead';
 
@@ -31,6 +35,12 @@ export class Game {
   private terrain: Terrain;
   private spawner: Spawner;
   private score: ScoreSystem;
+  private leaderboardAPI: LeaderboardAPI;
+  private deathScreen = new DeathScreen();
+  private leaderboardUI = new LeaderboardUI();
+  private audio = new AudioManager();
+  private nickname = 'Anonymous';
+  private lastScore = 0;
 
   state: GameState = 'title';
   private lastTime = 0;
@@ -48,6 +58,10 @@ export class Game {
     this.terrain = new Terrain(this.groundY);
     this.spawner = new Spawner();
     this.score = new ScoreSystem();
+    this.leaderboardAPI = new LeaderboardAPI(
+      'https://placeholder.supabase.co',
+      'placeholder-anon-key'
+    );
 
     this.initPlayer();
 
@@ -61,6 +75,15 @@ export class Game {
       if (this.state === 'dead' && e.code === 'Space') {
         this.restart();
       }
+      if (this.state === 'dead' && e.code === 'Enter') {
+        this.deathScreen.submitScore(this.leaderboardAPI, this.nickname, this.lastScore);
+      }
+      if (e.code === 'Escape') {
+        this.leaderboardUI.visible = false;
+      }
+      if (this.state === 'playing' && e.code === 'Space') {
+        this.audio.playSfx('jump');
+      }
     });
     window.addEventListener('keyup', (e) => {
       e.preventDefault();
@@ -71,6 +94,23 @@ export class Game {
       canvas.height = window.innerHeight;
       this.groundY = canvas.height - 80;
       this.camera.resize(canvas.width, canvas.height);
+    });
+    window.addEventListener('message', (event) => {
+      const msg = event.data;
+      if (msg.type === 'showLeaderboard') {
+        this.leaderboardUI.visible = true;
+        this.leaderboardAPI.getTopScores(20).then(scores => {
+          this.leaderboardUI.setScores(scores);
+        });
+      }
+      if (msg.type === 'setNickname') {
+        this.nickname = msg.nickname;
+      }
+      if (msg.type === 'setAudioConfig') {
+        this.audio.enabled = msg.enabled;
+        this.audio.setMusicVolume(msg.musicVolume);
+        this.audio.setSfxVolume(msg.sfxVolume);
+      }
     });
   }
 
@@ -160,6 +200,7 @@ export class Game {
         this.player.aimAngle,
         'player'
       ));
+      this.audio.playSfx('shoot');
     }
 
     // Update bullets
@@ -195,6 +236,7 @@ export class Game {
           if ((enemy as any).health <= 0) {
             enemy.alive = false;
             this.score.addKill((enemy as any).scoreValue || 10);
+            this.audio.playSfx('kill');
             if (enemy instanceof Boss) {
               this.spawner.setBossActive(false);
             }
@@ -240,7 +282,10 @@ export class Game {
 
   private die() {
     this.state = 'dead';
+    this.lastScore = this.score.current;
+    this.audio.playSfx('die');
     this.score.reset();
+    this.deathScreen.reset();
   }
 
   private render() {
@@ -310,9 +355,10 @@ export class Game {
 
     // Death screen
     if (this.state === 'dead') {
-      renderer.drawText('GAME OVER', canvas.width / 2, canvas.height / 2 - 20, '#ff0000', 28, 'center');
-      renderer.drawText(`Score: ${this.score.highScore}`, canvas.width / 2, canvas.height / 2 + 20, '#ffffff', 18, 'center');
-      renderer.drawText('Press SPACE to restart', canvas.width / 2, canvas.height / 2 + 50, '#888888', 14, 'center');
+      this.deathScreen.render(this.renderer, canvas.width, canvas.height, this.lastScore, this.score.highScore);
     }
+
+    // Leaderboard overlay
+    this.leaderboardUI.render(this.renderer, canvas.width, canvas.height);
   }
 }
