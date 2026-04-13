@@ -4,7 +4,7 @@
   "description": "Kill time between builds — Contra-style. A pixel-art run-and-gun game overlay for VS Code.",
   "version": "0.1.0",
   "publisher": "contra-code",
-  "engines": { "vscode": "^1.115.0" },
+  "engines": { "vscode": "^1.85.0" },
   "categories": ["Other"],
   "activationEvents": ["onStartupFinished"],
   "main": "./dist/extension/extension.js",
@@ -55,7 +55,7 @@
     "package": "vsce package"
   },
   "devDependencies": {
-    "@types/vscode": "^1.115.0",
+    "@types/vscode": "^1.85.0",
     "esbuild": "^0.28.0",
     "typescript": "^6.0.2",
     "vitest": "^4.1.4"

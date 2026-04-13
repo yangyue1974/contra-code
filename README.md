@@ -2,15 +2,17 @@
 
 **Kill time between builds — Contra-style.**
 
-A VS Code extension that brings a Contra-inspired pixel-art run-and-gun game right into your editor. Play in the bottom panel while waiting for builds, tests, and deploys.
+A VS Code / Cursor extension that brings a Contra-inspired pixel-art run-and-gun game right into your editor. Play in the bottom panel while waiting for builds, tests, and deploys.
 
-![Contra Code Screenshot](https://img.shields.io/badge/VS%20Code-Extension-blue?logo=visualstudiocode) ![License](https://img.shields.io/badge/license-MIT-green)
+![VS Code](https://img.shields.io/badge/VS%20Code-Extension-blue?logo=visualstudiocode) ![Cursor](https://img.shields.io/badge/Cursor-Compatible-purple) ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## Why?
 
 Developers spend a lot of time waiting — builds, CI/CD pipelines, test suites, deployments. Instead of staring at a spinning terminal, why not run through a quick round of pixel-art shooting action?
 
-Contra Code lives in your VS Code bottom panel. Code on top, game on the bottom. No context switching, no separate app.
+Contra Code lives in your editor's bottom panel. Code on top, game on the bottom. No context switching, no separate app.
+
+Works with **VS Code** and **Cursor**.
 
 ## Features
 
@@ -25,7 +27,7 @@ Contra Code lives in your VS Code bottom panel. Code on top, game on the bottom.
 
 ## Install
 
-### From VSIX (Current)
+### From VSIX
 
 ```bash
 # Clone and build
@@ -33,15 +35,22 @@ git clone https://github.com/yangyue1974/contra-code.git
 cd contra-code
 npm install
 npm run build
-
-# Package and install
 npx @vscode/vsce package --allow-missing-repository
+
+# Install in VS Code
 code --install-extension contra-code-0.1.0.vsix
+
+# Or install in Cursor
+cursor --install-extension contra-code-0.1.0.vsix
 ```
 
 ### From Marketplace (Coming Soon)
 
-Search "Contra Code" in the VS Code Extensions panel.
+Search "Contra Code" in the VS Code / Cursor Extensions panel.
+
+### Cursor Compatibility
+
+Contra Code is fully compatible with [Cursor](https://cursor.com). Cursor is built on VS Code, so the extension works identically — same controls, same features, same bottom panel experience.
 
 ## How to Play
 
