@@ -471,9 +471,15 @@ export class Game {
       } else {
         // Elevated platform: use jungle platform sprite (taller visual, tiled horizontally)
         if (this.sprites.loaded && this.sprites.getSprite('platform')) {
-          const visualHeight = 28; // taller visual than collision height for better look
+          const visualHeight = 32;
           const platSprite = this.sprites.getSprite('platform')!;
           const tileWidth = (platSprite.width / platSprite.height) * visualHeight;
+          const drawY = plat.y - (visualHeight - plat.height);
+
+          // Drop shadow directly under the platform for contrast
+          ctx.fillStyle = 'rgba(0,0,0,0.5)';
+          ctx.fillRect(sx + 2, drawY + visualHeight - 2, plat.width, 6);
+
           // Tile the sprite horizontally to fill platform width
           let drawX = sx;
           while (drawX < sx + plat.width) {
@@ -481,10 +487,14 @@ export class Game {
             ctx.drawImage(
               platSprite.canvas,
               0, 0, (w / tileWidth) * platSprite.width, platSprite.height,
-              drawX, plat.y - (visualHeight - plat.height), w, visualHeight
+              drawX, drawY, w, visualHeight
             );
             drawX += tileWidth;
           }
+
+          // Dark outline on top grass edge for extra separation
+          ctx.fillStyle = 'rgba(0,0,0,0.3)';
+          ctx.fillRect(sx, drawY, plat.width, 1);
         } else {
           renderer.drawRect(sx, plat.y, plat.width, plat.height, '#666');
           renderer.drawRect(sx, plat.y, plat.width, 2, '#999');
