@@ -516,17 +516,17 @@ export class Game {
       }
     }
 
-    // Draw power-ups — use actual weapon sprites
+    // Draw power-ups — use actual weapon sprites (bigger, with pulse on the sprite itself)
     for (const pu of this.powerUps) {
       const sx = camera.toScreenX(pu.x);
-      // Glowing aura (pulsing)
-      const glowIntensity = 0.3 + Math.abs(Math.sin(Date.now() / 300)) * 0.3;
-      ctx.fillStyle = `rgba(255,255,255,${glowIntensity})`;
-      ctx.fillRect(sx - 4, pu.y - 4, 32, 32);
+      const pulseScale = 1 + Math.abs(Math.sin(Date.now() / 300)) * 0.1;
+      const size = 36 * pulseScale;
+      const offsetX = (36 - size) / 2;
+      const offsetY = (36 - size) / 2;
 
       const weaponKey = `weapon_${pu.weaponType}`;
       if (this.sprites.loaded && this.sprites.getSprite(weaponKey)) {
-        this.sprites.drawSprite(ctx, weaponKey, sx - 4, pu.y - 4, 32, 32);
+        this.sprites.drawSprite(ctx, weaponKey, sx - 10 + offsetX, pu.y - 10 + offsetY, size, size);
       } else {
         renderer.drawRect(sx, pu.y, 24, 24, pu.getColor());
         renderer.drawText(pu.getLabel(), sx + 8, pu.y + 17, '#ffffff', 14);
