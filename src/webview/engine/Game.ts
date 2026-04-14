@@ -55,7 +55,7 @@ export class Game {
     this.renderer = new Renderer(ctx);
     this.camera = new Camera(canvas.width, canvas.height);
     this.groundY = canvas.height - 80;
-    this.terrain = new Terrain(this.groundY);
+    this.terrain = new Terrain(this.groundY, canvas.height);
     this.spawner = new Spawner();
     this.score = new ScoreSystem();
     this.leaderboardAPI = new LeaderboardAPI(
@@ -92,8 +92,26 @@ export class Game {
     window.addEventListener('resize', () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
+      const oldGroundY = this.groundY;
       this.groundY = canvas.height - 80;
+      const groundDelta = this.groundY - oldGroundY;
       this.camera.resize(canvas.width, canvas.height);
+      this.terrain.updateDimensions(this.groundY, canvas.height);
+
+      // Reposition all entities when panel resizes
+      if (groundDelta !== 0) {
+        this.player.y += groundDelta;
+        for (const e of this.enemies) {
+          e.y += groundDelta;
+          if ('baseY' in e) (e as any).baseY += groundDelta;
+        }
+        for (const b of this.bullets) b.y += groundDelta;
+        for (const b of this.enemyBullets) b.y += groundDelta;
+        // Shift terrain platforms
+        for (const p of this.terrain.getPlatforms()) {
+          p.y += groundDelta;
+        }
+      }
     });
     window.addEventListener('message', (event) => {
       const msg = event.data;
@@ -220,7 +238,7 @@ export class Game {
 
     // Spawn enemies
     const newEnemies = this.spawner.update(
-      dt, this.score.current, this.camera.x + this.camera.width, this.groundY
+      dt, this.score.current, this.camera.x + this.camera.width, this.groundY, this.canvas.height
     );
     this.enemies.push(...newEnemies);
 

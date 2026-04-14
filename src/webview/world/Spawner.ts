@@ -13,16 +13,19 @@ export class Spawner {
     this.bossActive = active;
   }
 
-  update(dt: number, score: number, cameraRight: number, groundY: number): Entity[] {
+  update(dt: number, score: number, cameraRight: number, groundY: number, canvasHeight: number): Entity[] {
     this.timer += dt;
 
     const spawned: Entity[] = [];
+
+    // Available vertical space above ground (leave 20px top margin for HUD)
+    const skyHeight = groundY - 20;
 
     // Boss spawn check
     if (!this.bossActive && score >= this.bossScoreThreshold) {
       this.bossActive = true;
       this.bossScoreThreshold += 500;
-      const bossY = groundY - 150;
+      const bossY = Math.max(20, groundY - Math.min(150, skyHeight * 0.7));
       spawned.push(new Boss(cameraRight + 100, bossY));
     }
 
@@ -39,8 +42,9 @@ export class Spawner {
     if (roll < turretChance) {
       spawned.push(new Turret(spawnX, groundY - 24));
     } else if (roll < turretChance + flyerChance) {
-      const flyY = groundY - 100 - Math.random() * 100;
-      spawned.push(new Flyer(spawnX, flyY));
+      // Flyer stays within visible area: between 20% and 70% of sky height above ground
+      const flyY = groundY - skyHeight * 0.2 - Math.random() * skyHeight * 0.5;
+      spawned.push(new Flyer(spawnX, Math.max(20, flyY)));
     } else {
       spawned.push(new Soldier(spawnX, groundY - 28));
     }
