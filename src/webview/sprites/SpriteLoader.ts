@@ -28,26 +28,27 @@ export class SpriteLoader {
     if (!base) return;
 
     // keyMode: 'black' = remove dark pixels, 'corner' = sample corner and remove matching
+    // undefined = keep original (for pre-transparent PNGs or full-color backgrounds)
     // cropBottom: fraction of height to crop off bottom (e.g. 0.05 = crop bottom 5%)
     const loadList: Array<{ key: string; file: string; frames?: number; keyMode?: 'black' | 'corner'; cropBottom?: number }> = [
-      // Weapon pickups (black bg)
-      { key: 'weapon_spread', file: 'redgun.jpg', keyMode: 'black' },
-      { key: 'weapon_laser', file: 'bluegun.jpg', keyMode: 'black' },
-      { key: 'weapon_rapid', file: 'greengun.jpg', keyMode: 'black' },
-      { key: 'weapon_flame', file: 'orangegun.jpg', keyMode: 'black' },
+      // Weapon pickups — pre-transparent PNGs
+      { key: 'weapon_spread', file: 'redgun.png' },
+      { key: 'weapon_laser', file: 'bluegun.png' },
+      { key: 'weapon_rapid', file: 'greengun.png' },
+      { key: 'weapon_flame', file: 'orangegun.png' },
       // Backgrounds — keep full image, no keying
       { key: 'bg_far', file: 'farview.jpg' },
       { key: 'bg_mid', file: 'middleview.jpg' },
       { key: 'bg_near', file: 'nearview.jpg' },
-      // Elevated platform — keep solid (no chroma key so black background stays as base)
-      { key: 'platform', file: 'platform.jpg' },
-      // Characters — corner chroma key + crop bottom to remove ground shadow line
-      { key: 'player', file: 'soldier.jpg', frames: 2, keyMode: 'corner', cropBottom: 0.05 },
-      { key: 'enemy_soldier', file: 'enemy_soldier.jpg', frames: 4, keyMode: 'corner', cropBottom: 0.05 },
-      { key: 'enemy_flyer', file: 'flyer.jpg', keyMode: 'black' },
-      { key: 'enemy_turret', file: 'turret.jpg', keyMode: 'corner' },
-      { key: 'boss', file: 'boss.jpg', keyMode: 'corner' },
-      // Effects — black bg
+      // Elevated platform — pre-transparent PNG
+      { key: 'platform', file: 'platform.png' },
+      // Characters — pre-transparent PNGs
+      { key: 'player', file: 'soldier.png', frames: 2, cropBottom: 0.05 },
+      { key: 'enemy_soldier', file: 'enemy_soldier.png', frames: 4, cropBottom: 0.05 },
+      { key: 'enemy_flyer', file: 'flyer.png' },
+      { key: 'enemy_turret', file: 'turret.png' },
+      { key: 'boss', file: 'boss.png' },
+      // Effects — black bg (still JPGs, need chroma key)
       { key: 'spark', file: 'spark.jpg', frames: 6, keyMode: 'black' },
       { key: 'explosion', file: 'explosion.jpg', frames: 7, keyMode: 'black' },
     ];
