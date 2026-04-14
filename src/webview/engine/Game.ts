@@ -503,12 +503,6 @@ export class Game {
         } else if (enemy instanceof Soldier) {
           this.sprites.drawFrame(ctx, 'enemy_soldier', this.animFrame, sx, enemy.y, enemy.width, enemy.height, enemy.x > this.player.x);
         } else if (enemy instanceof Flyer) {
-          // Glow halo for visibility against sky
-          const glowPulse = 0.4 + Math.abs(Math.sin(Date.now() / 200)) * 0.3;
-          ctx.fillStyle = `rgba(255,80,200,${glowPulse * 0.35})`;
-          ctx.beginPath();
-          ctx.ellipse(sx + enemy.width / 2, enemy.y + enemy.height / 2, enemy.width * 0.7, enemy.height * 0.9, 0, 0, Math.PI * 2);
-          ctx.fill();
           this.sprites.drawSprite(ctx, 'enemy_flyer', sx, enemy.y, enemy.width, enemy.height, enemy.x > this.player.x);
         } else if (enemy instanceof Turret) {
           this.sprites.drawSprite(ctx, 'enemy_turret', sx, enemy.y, enemy.width, enemy.height, enemy.x > this.player.x);
