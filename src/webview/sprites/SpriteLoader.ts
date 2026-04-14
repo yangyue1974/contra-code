@@ -28,7 +28,8 @@ export class SpriteLoader {
     if (!base) return;
 
     // keyMode: 'black' = remove dark pixels, 'corner' = sample corner and remove matching
-    const loadList: Array<{ key: string; file: string; frames?: number; keyMode?: 'black' | 'corner' }> = [
+    // cropBottom: fraction of height to crop off bottom (e.g. 0.05 = crop bottom 5%)
+    const loadList: Array<{ key: string; file: string; frames?: number; keyMode?: 'black' | 'corner'; cropBottom?: number }> = [
       // Weapon pickups (black bg)
       { key: 'weapon_spread', file: 'redgun.jpg', keyMode: 'black' },
       { key: 'weapon_laser', file: 'bluegun.jpg', keyMode: 'black' },
@@ -38,9 +39,9 @@ export class SpriteLoader {
       { key: 'bg_far', file: 'farview.jpg' },
       { key: 'bg_mid', file: 'middleview.jpg' },
       { key: 'bg_near', file: 'nearview.jpg' },
-      // Characters — corner chroma key (backgrounds vary: white, grey, etc.)
-      { key: 'player', file: 'soldier.jpg', frames: 2, keyMode: 'corner' },
-      { key: 'enemy_soldier', file: 'enemy_soldier.jpg', frames: 4, keyMode: 'corner' },
+      // Characters — corner chroma key + crop bottom to remove ground shadow line
+      { key: 'player', file: 'soldier.jpg', frames: 2, keyMode: 'corner', cropBottom: 0.05 },
+      { key: 'enemy_soldier', file: 'enemy_soldier.jpg', frames: 4, keyMode: 'corner', cropBottom: 0.05 },
       { key: 'enemy_flyer', file: 'flyer.jpg', keyMode: 'black' },
       { key: 'enemy_turret', file: 'turret.jpg', keyMode: 'corner' },
       { key: 'boss', file: 'boss.jpg', keyMode: 'corner' },
@@ -49,16 +50,16 @@ export class SpriteLoader {
       { key: 'explosion', file: 'explosion.jpg', frames: 7, keyMode: 'black' },
     ];
 
-    await Promise.all(loadList.map(item => this.loadSprite(base, item.key, item.file, item.frames, item.keyMode)));
+    await Promise.all(loadList.map(item => this.loadSprite(base, item.key, item.file, item.frames, item.keyMode, item.cropBottom)));
     this.loaded = true;
   }
 
-  private loadSprite(base: string, key: string, file: string, frames?: number, keyMode?: 'black' | 'corner'): Promise<void> {
+  private loadSprite(base: string, key: string, file: string, frames?: number, keyMode?: 'black' | 'corner', cropBottom?: number): Promise<void> {
     return new Promise((resolve) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
-        const processed = this.processImage(img, keyMode);
+        const processed = this.processImage(img, keyMode, cropBottom);
         if (frames && frames > 1) {
           this.animations.set(key, this.splitFrames(processed, frames));
         } else {
@@ -80,12 +81,19 @@ export class SpriteLoader {
    * - 'corner': samples corner pixels to determine background color, removes similar pixels
    * - undefined: no background removal (keep original, e.g. backgrounds)
    */
-  private processImage(img: HTMLImageElement, keyMode?: 'black' | 'corner'): LoadedSprite {
+  private processImage(img: HTMLImageElement, keyMode?: 'black' | 'corner', cropBottom?: number): LoadedSprite {
     const canvas = document.createElement('canvas');
+    const fullH = img.naturalHeight;
+    const cropPx = cropBottom ? Math.floor(fullH * cropBottom) : 0;
     canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
+    canvas.height = fullH - cropPx;
     const ctx = canvas.getContext('2d')!;
-    ctx.drawImage(img, 0, 0);
+    // Draw image cropped at the bottom
+    ctx.drawImage(
+      img,
+      0, 0, img.naturalWidth, fullH - cropPx,
+      0, 0, img.naturalWidth, fullH - cropPx
+    );
 
     if (!keyMode) {
       return { canvas, width: canvas.width, height: canvas.height };
