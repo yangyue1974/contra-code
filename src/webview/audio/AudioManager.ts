@@ -29,9 +29,12 @@ export class AudioManager {
     const url = window.__BGM_URL__;
     if (!url) return;
 
-    this.bgmElement = new Audio(url);
-    this.bgmElement.loop = true;
-    this.bgmElement.volume = this.musicVolume;
+    // Reuse existing element if paused, else create fresh
+    if (!this.bgmElement) {
+      this.bgmElement = new Audio(url);
+      this.bgmElement.loop = true;
+      this.bgmElement.volume = this.musicVolume;
+    }
     this.bgmElement.play().catch(() => {});
     this.bgmStarted = true;
   }
@@ -39,7 +42,6 @@ export class AudioManager {
   stopMusic() {
     if (this.bgmElement) {
       this.bgmElement.pause();
-      this.bgmElement.currentTime = 0;
       this.bgmStarted = false;
     }
   }

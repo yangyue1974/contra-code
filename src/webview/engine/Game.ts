@@ -128,6 +128,20 @@ export class Game {
         }
       }
     });
+    // Stop music when the webview/tab is hidden or unloaded
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        this.audio.stopMusic();
+      } else if (this.state === 'playing') {
+        this.audio.startMusic();
+      }
+    });
+    window.addEventListener('pagehide', () => {
+      this.audio.stopMusic();
+    });
+    window.addEventListener('beforeunload', () => {
+      this.audio.stopMusic();
+    });
     window.addEventListener('message', (event) => {
       const msg = event.data;
       if (msg.type === 'showLeaderboard') {
@@ -143,6 +157,12 @@ export class Game {
         this.audio.enabled = msg.enabled;
         this.audio.setMusicVolume(msg.musicVolume);
         this.audio.setSfxVolume(msg.sfxVolume);
+      }
+      if (msg.type === 'stopMusic') {
+        this.audio.stopMusic();
+      }
+      if (msg.type === 'resumeMusic' && this.state === 'playing') {
+        this.audio.startMusic();
       }
     });
   }
@@ -434,6 +454,7 @@ export class Game {
     this.state = 'dead';
     this.lastScore = this.score.current;
     this.audio.playSfx('die');
+    this.audio.stopMusic();
     this.score.reset();
     this.deathScreen.reset();
   }

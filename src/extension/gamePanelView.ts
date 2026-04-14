@@ -24,6 +24,15 @@ export class GamePanelViewProvider implements vscode.WebviewViewProvider {
 
     webviewView.webview.html = this.getHtml(webviewView.webview);
 
+    // Stop music when panel becomes hidden (user switches tab or hides panel)
+    webviewView.onDidChangeVisibility(() => {
+      if (!webviewView.visible) {
+        webviewView.webview.postMessage({ type: 'stopMusic' });
+      } else {
+        webviewView.webview.postMessage({ type: 'resumeMusic' });
+      }
+    });
+
     // Send config once webview is ready
     const config = getConfig();
     setTimeout(() => {
