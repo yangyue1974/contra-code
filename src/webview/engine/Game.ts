@@ -469,9 +469,26 @@ export class Game {
         renderer.drawRect(sx, plat.y, plat.width, plat.height, '#2a1a0a');
         renderer.drawRect(sx, plat.y, plat.width, 3, '#4a6b1f');
       } else {
-        // Elevated platform: metallic with edge highlight
-        renderer.drawRect(sx, plat.y, plat.width, plat.height, '#666');
-        renderer.drawRect(sx, plat.y, plat.width, 2, '#999');
+        // Elevated platform: use jungle platform sprite (taller visual, tiled horizontally)
+        if (this.sprites.loaded && this.sprites.getSprite('platform')) {
+          const visualHeight = 28; // taller visual than collision height for better look
+          const platSprite = this.sprites.getSprite('platform')!;
+          const tileWidth = (platSprite.width / platSprite.height) * visualHeight;
+          // Tile the sprite horizontally to fill platform width
+          let drawX = sx;
+          while (drawX < sx + plat.width) {
+            const w = Math.min(tileWidth, sx + plat.width - drawX);
+            ctx.drawImage(
+              platSprite.canvas,
+              0, 0, (w / tileWidth) * platSprite.width, platSprite.height,
+              drawX, plat.y - (visualHeight - plat.height), w, visualHeight
+            );
+            drawX += tileWidth;
+          }
+        } else {
+          renderer.drawRect(sx, plat.y, plat.width, plat.height, '#666');
+          renderer.drawRect(sx, plat.y, plat.width, 2, '#999');
+        }
       }
     }
 
