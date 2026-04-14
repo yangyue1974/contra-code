@@ -51,6 +51,9 @@ export class GamePanelViewProvider implements vscode.WebviewViewProvider {
     const bgmUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.extensionUri, 'media', 'bgm.mp3')
     );
+    const spriteBase = webview.asWebviewUri(
+      vscode.Uri.joinPath(this.extensionUri, 'media', 'sprites')
+    );
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -68,6 +71,7 @@ export class GamePanelViewProvider implements vscode.WebviewViewProvider {
   <canvas id="game" tabindex="0"></canvas>
   <script>
     window.__BGM_URL__ = "${bgmUri}";
+    window.__SPRITE_BASE__ = "${spriteBase}";
     // Ensure canvas captures keyboard focus
     const c = document.getElementById('game');
     c.focus();

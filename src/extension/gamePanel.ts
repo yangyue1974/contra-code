@@ -81,6 +81,9 @@ export class GamePanel {
     const bgmUri = this.panel.webview.asWebviewUri(
       vscode.Uri.joinPath(this.extensionUri, 'media', 'bgm.mp3')
     );
+    const spriteBase = this.panel.webview.asWebviewUri(
+      vscode.Uri.joinPath(this.extensionUri, 'media', 'sprites')
+    );
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -98,6 +101,7 @@ export class GamePanel {
   <canvas id="game" tabindex="0"></canvas>
   <script>
     window.__BGM_URL__ = "${bgmUri}";
+    window.__SPRITE_BASE__ = "${spriteBase}";
     const c = document.getElementById('game');
     c.focus();
     c.addEventListener('click', () => c.focus());

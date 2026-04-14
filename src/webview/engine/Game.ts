@@ -15,6 +15,7 @@ import { Spawner } from '../world/Spawner';
 import { ScoreSystem } from '../systems/Score';
 import { resolveEntityPlatform, checkEntityCollision } from '../systems/Collision';
 import { PLAYER_STAND, ENEMY_SOLDIER, ENEMY_FLYER, ENEMY_TURRET, ENEMY_BOSS, BULLET_PLAYER, BULLET_ENEMY } from '../sprites/SpriteData';
+import { SpriteLoader } from '../sprites/SpriteLoader';
 import { LeaderboardAPI } from '../network/LeaderboardAPI';
 import { DeathScreen } from '../ui/DeathScreen';
 import { LeaderboardUI } from '../ui/LeaderboardUI';
@@ -40,6 +41,10 @@ export class Game {
   private deathScreen = new DeathScreen();
   private leaderboardUI = new LeaderboardUI();
   private audio = new AudioManager();
+  private sprites = new SpriteLoader();
+  private animFrame = 0; // for player running animation
+  private animTimer = 0;
+  private effects: Array<{ x: number; y: number; type: 'spark' | 'explosion'; frame: number; timer: number; size: number }> = [];
   private nickname = 'Anonymous';
   private lastScore = 0;
 
@@ -173,6 +178,7 @@ export class Game {
   start() {
     this.running = true;
     this.lastTime = performance.now();
+    this.sprites.loadAll().catch(err => console.warn('Sprite load error:', err));
     requestAnimationFrame((t) => this.loop(t));
   }
 
@@ -192,6 +198,26 @@ export class Game {
 
   private update(dt: number) {
     if (this.state !== 'playing') return;
+
+    // Animation timers
+    this.animTimer += dt;
+    if (this.animTimer >= 0.15) {
+      this.animTimer = 0;
+      this.animFrame = (this.animFrame + 1) % 2;
+    }
+
+    // Update effects (sparks, explosions)
+    for (const fx of this.effects) {
+      fx.timer += dt;
+      if (fx.timer >= 0.06) {
+        fx.timer = 0;
+        fx.frame++;
+      }
+    }
+    this.effects = this.effects.filter(fx =>
+      (fx.type === 'spark' && fx.frame < 6) ||
+      (fx.type === 'explosion' && fx.frame < 7)
+    );
 
     // Camera auto-scroll
     this.camera.update(dt);
@@ -342,10 +368,23 @@ export class Game {
           if (!(bullet as any).piercing) {
             bullet.alive = false;
           }
+          // Spawn impact spark
+          this.effects.push({
+            x: bullet.x, y: bullet.y, type: 'spark',
+            frame: 0, timer: 0, size: 20,
+          });
           const damage = (bullet as any).damage || 1;
           (enemy as any).health -= damage;
           if ((enemy as any).health <= 0) {
             enemy.alive = false;
+            // Spawn explosion
+            this.effects.push({
+              x: enemy.x + enemy.width / 2 - 24,
+              y: enemy.y + enemy.height / 2 - 24,
+              type: 'explosion',
+              frame: 0, timer: 0,
+              size: enemy instanceof Boss ? 80 : 48,
+            });
             this.score.addKill((enemy as any).scoreValue || 10);
             this.audio.playSfx('kill');
             if (enemy instanceof Boss) {
@@ -401,6 +440,8 @@ export class Game {
 
   private render() {
     const { renderer, canvas, camera } = this;
+    const ctx = this.canvas.getContext('2d')!;
+    ctx.imageSmoothingEnabled = false;
     renderer.clear(canvas.width, canvas.height);
 
     if (this.state === 'title') {
@@ -409,25 +450,57 @@ export class Game {
       return;
     }
 
+    // Draw parallax backgrounds (sky → mountains → jungle)
+    if (this.sprites.loaded) {
+      const skyHeight = this.groundY - 20;
+      // Far: scrolls slowest, takes top half of sky
+      this.sprites.drawBackground(ctx, 'bg_far', camera.x * 0.1, 0, canvas.width, skyHeight * 0.7);
+      // Mid: scrolls medium, takes middle portion
+      this.sprites.drawBackground(ctx, 'bg_mid', camera.x * 0.3, skyHeight * 0.4, canvas.width, skyHeight * 0.5);
+      // Near: fastest, just above ground
+      this.sprites.drawBackground(ctx, 'bg_near', camera.x * 0.6, this.groundY - 40, canvas.width, 50);
+    }
+
     // Draw terrain
     for (const plat of this.terrain.getPlatforms()) {
       const sx = camera.toScreenX(plat.x);
-      renderer.drawRect(sx, plat.y, plat.width, plat.height, plat.isGround ? '#3a2a1a' : '#555555');
+      if (plat.isGround) {
+        // Ground: darker brown with top grass line
+        renderer.drawRect(sx, plat.y, plat.width, plat.height, '#2a1a0a');
+        renderer.drawRect(sx, plat.y, plat.width, 3, '#4a6b1f');
+      } else {
+        // Elevated platform: metallic with edge highlight
+        renderer.drawRect(sx, plat.y, plat.width, plat.height, '#666');
+        renderer.drawRect(sx, plat.y, plat.width, 2, '#999');
+      }
     }
 
     // Draw enemies with sprites
     for (const enemy of this.enemies) {
       const sx = camera.toScreenX(enemy.x);
-      if (enemy instanceof Boss) {
-        this.renderer.drawSprite(ENEMY_BOSS, sx, enemy.y, 2);
-      } else if (enemy instanceof Soldier) {
-        this.renderer.drawSprite(ENEMY_SOLDIER, sx, enemy.y, 2);
-      } else if (enemy instanceof Flyer) {
-        this.renderer.drawSprite(ENEMY_FLYER, sx, enemy.y, 2);
-      } else if (enemy instanceof Turret) {
-        this.renderer.drawSprite(ENEMY_TURRET, sx, enemy.y, 2);
+      if (this.sprites.loaded) {
+        if (enemy instanceof Boss) {
+          this.sprites.drawSprite(ctx, 'boss', sx, enemy.y, enemy.width, enemy.height);
+        } else if (enemy instanceof Soldier) {
+          this.sprites.drawFrame(ctx, 'enemy_soldier', this.animFrame, sx, enemy.y, enemy.width, enemy.height, enemy.x > this.player.x);
+        } else if (enemy instanceof Flyer) {
+          this.sprites.drawSprite(ctx, 'enemy_flyer', sx, enemy.y, enemy.width, enemy.height, enemy.x > this.player.x);
+        } else if (enemy instanceof Turret) {
+          this.sprites.drawSprite(ctx, 'enemy_turret', sx, enemy.y, enemy.width, enemy.height, enemy.x > this.player.x);
+        } else {
+          renderer.drawRect(sx, enemy.y, enemy.width, enemy.height, '#ff4444');
+        }
       } else {
-        renderer.drawRect(sx, enemy.y, enemy.width, enemy.height, '#ff4444');
+        // Fallback while sprites load
+        if (enemy instanceof Boss) {
+          this.renderer.drawSprite(ENEMY_BOSS, sx, enemy.y, 2);
+        } else if (enemy instanceof Soldier) {
+          this.renderer.drawSprite(ENEMY_SOLDIER, sx, enemy.y, 2);
+        } else if (enemy instanceof Flyer) {
+          this.renderer.drawSprite(ENEMY_FLYER, sx, enemy.y, 2);
+        } else if (enemy instanceof Turret) {
+          this.renderer.drawSprite(ENEMY_TURRET, sx, enemy.y, 2);
+        }
       }
     }
 
@@ -443,37 +516,66 @@ export class Game {
       }
     }
 
-    // Draw power-ups
+    // Draw power-ups — use actual weapon sprites
     for (const pu of this.powerUps) {
       const sx = camera.toScreenX(pu.x);
-      // Glowing box
-      renderer.drawRect(sx - 2, pu.y - 2, 20, 20, 'rgba(255,255,255,0.3)');
-      renderer.drawRect(sx, pu.y, 16, 16, pu.getColor());
-      renderer.drawText(pu.getLabel(), sx + 4, pu.y + 13, '#ffffff', 12);
+      // Glowing aura (pulsing)
+      const glowIntensity = 0.3 + Math.abs(Math.sin(Date.now() / 300)) * 0.3;
+      ctx.fillStyle = `rgba(255,255,255,${glowIntensity})`;
+      ctx.fillRect(sx - 4, pu.y - 4, 32, 32);
+
+      const weaponKey = `weapon_${pu.weaponType}`;
+      if (this.sprites.loaded && this.sprites.getSprite(weaponKey)) {
+        this.sprites.drawSprite(ctx, weaponKey, sx - 4, pu.y - 4, 32, 32);
+      } else {
+        renderer.drawRect(sx, pu.y, 24, 24, pu.getColor());
+        renderer.drawText(pu.getLabel(), sx + 8, pu.y + 17, '#ffffff', 14);
+      }
     }
 
-    // Draw player with sprite
+    // Draw player with sprite (2-frame running animation)
     const playerSX = camera.toScreenX(this.player.x);
-    this.renderer.drawSprite(PLAYER_STAND, playerSX, this.player.y, 2, !this.player.facingRight);
+    if (this.sprites.loaded) {
+      this.sprites.drawFrame(ctx, 'player', this.animFrame, playerSX - 4, this.player.y - 4, 32, 40, !this.player.facingRight);
+    } else {
+      this.renderer.drawSprite(PLAYER_STAND, playerSX, this.player.y, 2, !this.player.facingRight);
+    }
 
     // Draw player bullets
     for (const b of this.bullets) {
       const sx = camera.toScreenX(b.x);
       if ((b as any).piercing) {
-        // Laser: longer, blue
-        renderer.drawRect(sx, b.y, 12, 2, '#4488ff');
-        renderer.drawRect(sx, b.y - 1, 12, 4, 'rgba(68,136,255,0.4)');
+        // Laser: longer, blue with glow
+        ctx.fillStyle = 'rgba(68,136,255,0.4)';
+        ctx.fillRect(sx - 4, b.y - 2, 20, 6);
+        renderer.drawRect(sx, b.y, 14, 2, '#4488ff');
       } else if ((b as any).damage && (b as any).damage > 1) {
-        // Flame: bigger, orange
+        // Flame: bigger, orange with glow
+        ctx.fillStyle = 'rgba(255,136,0,0.5)';
+        ctx.fillRect(sx - 2, b.y - 3, 14, 9);
         renderer.drawRect(sx, b.y - 2, 10, 7, '#ff8800');
         renderer.drawRect(sx - 1, b.y - 1, 8, 5, '#ffaa00');
       } else if (b.owner === 'player') {
+        // Normal bullet with tiny glow
+        ctx.fillStyle = 'rgba(255,255,0,0.4)';
+        ctx.fillRect(sx - 1, b.y - 1, 8, 5);
         renderer.drawRect(sx, b.y, 5, 3, '#ffff00');
       }
     }
     for (const b of this.enemyBullets) {
       const sx = camera.toScreenX(b.x);
+      ctx.fillStyle = 'rgba(255,136,0,0.4)';
+      ctx.fillRect(sx - 1, b.y - 1, 8, 5);
       this.renderer.drawSprite(BULLET_ENEMY, sx, b.y, 2);
+    }
+
+    // Draw effects (sparks and explosions) - after entities so they appear on top
+    if (this.sprites.loaded) {
+      for (const fx of this.effects) {
+        const sx = camera.toScreenX(fx.x);
+        const key = fx.type === 'spark' ? 'spark' : 'explosion';
+        this.sprites.drawFrame(ctx, key, fx.frame, sx - fx.size / 2, fx.y - fx.size / 2, fx.size, fx.size);
+      }
     }
 
     // HUD
