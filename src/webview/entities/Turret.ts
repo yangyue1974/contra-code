@@ -9,7 +9,7 @@ export class Turret extends Entity {
   private fireTimer = 0;
 
   constructor(x: number, y: number) {
-    super(x, y, 24, 24);
+    super(x, y, 36, 36);
   }
 
   update(dt: number, playerX: number): Bullet | null {

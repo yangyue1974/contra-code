@@ -38,11 +38,11 @@ export class Spawner {
     const spawnX = cameraRight + 50 + Math.random() * 100;
 
     const roll = Math.random();
-    const turretChance = score > 200 ? 0.2 : 0;
+    const turretChance = score > 50 ? 0.25 : 0;
     const flyerChance = score > 100 ? 0.3 : 0;
 
     if (roll < turretChance) {
-      spawned.push(new Turret(spawnX, groundY - 24));
+      spawned.push(new Turret(spawnX, groundY - 36));
     } else if (roll < turretChance + flyerChance) {
       // Flyer stays within visible area: between 20% and 70% of sky height above ground
       const flyY = groundY - skyHeight * 0.2 - Math.random() * skyHeight * 0.5;
