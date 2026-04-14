@@ -8,6 +8,7 @@ export class Spawner {
   private timer = 0;
   private bossScoreThreshold = 500;
   private bossActive = false;
+  private bossLevel = 0;
 
   setBossActive(active: boolean) {
     this.bossActive = active;
@@ -21,12 +22,13 @@ export class Spawner {
     // Available vertical space above ground (leave 20px top margin for HUD)
     const skyHeight = groundY - 20;
 
-    // Boss spawn check
+    // Boss spawn check — level increases each time
     if (!this.bossActive && score >= this.bossScoreThreshold) {
       this.bossActive = true;
       this.bossScoreThreshold += 500;
+      this.bossLevel++;
       const bossY = Math.max(20, groundY - Math.min(150, skyHeight * 0.7));
-      spawned.push(new Boss(cameraRight + 100, bossY));
+      spawned.push(new Boss(cameraRight + 100, bossY, this.bossLevel));
     }
 
     const spawnInterval = Math.max(0.5, 2 - score / 1000);
@@ -60,5 +62,6 @@ export class Spawner {
     this.timer = 0;
     this.bossActive = false;
     this.bossScoreThreshold = 500;
+    this.bossLevel = 0;
   }
 }
