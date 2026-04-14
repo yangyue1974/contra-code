@@ -454,7 +454,6 @@ export class Game {
     this.state = 'dead';
     this.lastScore = this.score.current;
     this.audio.playSfx('die');
-    this.audio.stopMusic();
     this.score.reset();
     this.deathScreen.reset();
   }
