@@ -501,7 +501,8 @@ export class Game {
         if (enemy instanceof Boss) {
           this.sprites.drawSprite(ctx, 'boss', sx, enemy.y, enemy.width, enemy.height);
         } else if (enemy instanceof Soldier) {
-          this.sprites.drawFrame(ctx, 'enemy_soldier', this.animFrame, sx, enemy.y, enemy.width, enemy.height, enemy.x > this.player.x);
+          // Sprite is drawn facing left by default; flip only if enemy is to the LEFT of player
+          this.sprites.drawFrame(ctx, 'enemy_soldier', this.animFrame, sx, enemy.y, enemy.width, enemy.height, enemy.x < this.player.x);
         } else if (enemy instanceof Flyer) {
           this.sprites.drawSprite(ctx, 'enemy_flyer', sx, enemy.y, enemy.width, enemy.height, enemy.x > this.player.x);
         } else if (enemy instanceof Turret) {
