@@ -469,16 +469,12 @@ export class Game {
         renderer.drawRect(sx, plat.y, plat.width, plat.height, '#2a1a0a');
         renderer.drawRect(sx, plat.y, plat.width, 3, '#4a6b1f');
       } else {
-        // Elevated platform: use jungle platform sprite (taller visual, tiled horizontally)
+        // Elevated platform: solid jungle platform sprite (includes its own dark base)
         if (this.sprites.loaded && this.sprites.getSprite('platform')) {
           const visualHeight = 32;
           const platSprite = this.sprites.getSprite('platform')!;
           const tileWidth = (platSprite.width / platSprite.height) * visualHeight;
           const drawY = plat.y - (visualHeight - plat.height);
-
-          // Drop shadow directly under the platform for contrast
-          ctx.fillStyle = 'rgba(0,0,0,0.5)';
-          ctx.fillRect(sx + 2, drawY + visualHeight - 2, plat.width, 6);
 
           // Tile the sprite horizontally to fill platform width
           let drawX = sx;
@@ -491,10 +487,6 @@ export class Game {
             );
             drawX += tileWidth;
           }
-
-          // Dark outline on top grass edge for extra separation
-          ctx.fillStyle = 'rgba(0,0,0,0.3)';
-          ctx.fillRect(sx, drawY, plat.width, 1);
         } else {
           renderer.drawRect(sx, plat.y, plat.width, plat.height, '#666');
           renderer.drawRect(sx, plat.y, plat.width, 2, '#999');
@@ -511,6 +503,12 @@ export class Game {
         } else if (enemy instanceof Soldier) {
           this.sprites.drawFrame(ctx, 'enemy_soldier', this.animFrame, sx, enemy.y, enemy.width, enemy.height, enemy.x > this.player.x);
         } else if (enemy instanceof Flyer) {
+          // Glow halo for visibility against sky
+          const glowPulse = 0.4 + Math.abs(Math.sin(Date.now() / 200)) * 0.3;
+          ctx.fillStyle = `rgba(255,80,200,${glowPulse * 0.35})`;
+          ctx.beginPath();
+          ctx.ellipse(sx + enemy.width / 2, enemy.y + enemy.height / 2, enemy.width * 0.7, enemy.height * 0.9, 0, 0, Math.PI * 2);
+          ctx.fill();
           this.sprites.drawSprite(ctx, 'enemy_flyer', sx, enemy.y, enemy.width, enemy.height, enemy.x > this.player.x);
         } else if (enemy instanceof Turret) {
           this.sprites.drawSprite(ctx, 'enemy_turret', sx, enemy.y, enemy.width, enemy.height, enemy.x > this.player.x);
@@ -591,9 +589,19 @@ export class Game {
     }
     for (const b of this.enemyBullets) {
       const sx = camera.toScreenX(b.x);
-      ctx.fillStyle = 'rgba(255,136,0,0.4)';
-      ctx.fillRect(sx - 1, b.y - 1, 8, 5);
-      this.renderer.drawSprite(BULLET_ENEMY, sx, b.y, 2);
+      // Large red plasma ball - very visible
+      ctx.fillStyle = 'rgba(255,0,0,0.3)';
+      ctx.beginPath();
+      ctx.arc(sx + 3, b.y + 1, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,80,80,0.7)';
+      ctx.beginPath();
+      ctx.arc(sx + 3, b.y + 1, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffcc00';
+      ctx.beginPath();
+      ctx.arc(sx + 3, b.y + 1, 3, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     // Draw effects (sparks and explosions) - after entities so they appear on top

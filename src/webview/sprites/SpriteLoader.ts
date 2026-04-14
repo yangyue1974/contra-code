@@ -39,8 +39,8 @@ export class SpriteLoader {
       { key: 'bg_far', file: 'farview.jpg' },
       { key: 'bg_mid', file: 'middleview.jpg' },
       { key: 'bg_near', file: 'nearview.jpg' },
-      // Elevated platform (black bg)
-      { key: 'platform', file: 'platform.jpg', keyMode: 'black' },
+      // Elevated platform — keep solid (no chroma key so black background stays as base)
+      { key: 'platform', file: 'platform.jpg' },
       // Characters — corner chroma key + crop bottom to remove ground shadow line
       { key: 'player', file: 'soldier.jpg', frames: 2, keyMode: 'corner', cropBottom: 0.05 },
       { key: 'enemy_soldier', file: 'enemy_soldier.jpg', frames: 4, keyMode: 'corner', cropBottom: 0.05 },

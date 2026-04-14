@@ -11,7 +11,7 @@ export class Flyer extends Entity {
   private baseY: number;
 
   constructor(x: number, y: number) {
-    super(x, y, 20, 16);
+    super(x, y, 32, 24);
     this.baseY = y;
   }
 
