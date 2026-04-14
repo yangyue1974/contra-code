@@ -11,6 +11,7 @@ export class Terrain {
   private generatedUpTo = 0;
   private groundY: number;
   private canvasHeight: number;
+  private lastPlatformX = 0;
   difficulty = 0; // 0 to 1
 
   constructor(groundY: number, canvasHeight: number = 600) {
@@ -29,33 +30,36 @@ export class Terrain {
     const skyHeight = Math.max(40, this.groundY - 20);
 
     while (this.generatedUpTo < generateTo) {
-      const hasGap = Math.random() < this.difficulty * 0.3;
-      const segmentWidth = 200 + Math.random() * 300;
+      const segmentWidth = 300 + Math.random() * 400;
 
-      if (!hasGap) {
-        this.platforms.push({
-          x: this.generatedUpTo,
-          y: this.groundY,
-          width: segmentWidth,
-          height: 40,
-          isGround: true,
-        });
-      }
+      // Ground is always continuous — no gaps
+      this.platforms.push({
+        x: this.generatedUpTo,
+        y: this.groundY,
+        width: segmentWidth + 10, // slight overlap to prevent seams
+        height: 40,
+        isGround: true,
+      });
 
-      if (Math.random() < 0.3 + this.difficulty * 0.2) {
-        // Platform height: between 30% and 60% of sky height above ground
-        const platY = this.groundY - skyHeight * 0.3 - Math.random() * skyHeight * 0.3;
-        const platWidth = 60 + Math.random() * 100;
+      // Elevated platforms — structured placement
+      const distSinceLastPlatform = this.generatedUpTo - this.lastPlatformX;
+      const platformInterval = 400 + Math.random() * 200; // every 400-600px
+
+      if (distSinceLastPlatform >= platformInterval) {
+        const platWidth = 80 + Math.random() * 40;
+        // Height: always reachable with a jump (25-45% of sky height)
+        const platY = this.groundY - skyHeight * 0.25 - Math.random() * skyHeight * 0.2;
         this.platforms.push({
-          x: this.generatedUpTo + Math.random() * segmentWidth,
-          y: Math.max(20, platY),
+          x: this.generatedUpTo + segmentWidth * 0.3 + Math.random() * segmentWidth * 0.4,
+          y: Math.max(30, platY),
           width: platWidth,
-          height: 16,
+          height: 12,
           isGround: false,
         });
+        this.lastPlatformX = this.generatedUpTo;
       }
 
-      this.generatedUpTo += segmentWidth + (hasGap ? 60 + Math.random() * 40 : 0);
+      this.generatedUpTo += segmentWidth;
     }
   }
 
@@ -72,6 +76,7 @@ export class Terrain {
   reset() {
     this.platforms = [];
     this.generatedUpTo = 0;
+    this.lastPlatformX = 0;
     this.difficulty = 0;
   }
 }

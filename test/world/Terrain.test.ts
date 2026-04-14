@@ -38,14 +38,13 @@ describe('Terrain', () => {
     expect(allAfterCamera).toBe(true);
   });
 
-  it('creates gaps in ground at higher difficulty', () => {
+  it('ground is continuous with no gaps', () => {
     terrain.difficulty = 0.8;
-    // Generate a long stretch to ensure gaps appear
+    // Generate a long stretch
     terrain.generate(0, 5000);
     const groundPlatforms = terrain.getPlatforms().filter(p => p.isGround);
-    // With high difficulty over a long stretch, we should see gaps (not one continuous ground)
-    // The total ground coverage should be less than 5000 pixels
+    // Ground should always be continuous — total coverage >= requested range
     const totalGroundWidth = groundPlatforms.reduce((sum, p) => sum + p.width, 0);
-    expect(totalGroundWidth).toBeLessThan(5000);
+    expect(totalGroundWidth).toBeGreaterThanOrEqual(5000);
   });
 });

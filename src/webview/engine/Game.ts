@@ -10,6 +10,7 @@ import { Soldier } from '../entities/Soldier';
 import { Flyer } from '../entities/Flyer';
 import { Turret } from '../entities/Turret';
 import { Terrain } from '../world/Terrain';
+import { PowerUp, WeaponType } from '../entities/PowerUp';
 import { Spawner } from '../world/Spawner';
 import { ScoreSystem } from '../systems/Score';
 import { resolveEntityPlatform, checkEntityCollision } from '../systems/Collision';
@@ -43,6 +44,11 @@ export class Game {
   private lastScore = 0;
 
   state: GameState = 'title';
+  private powerUps: PowerUp[] = [];
+  private currentWeapon: WeaponType = 'normal';
+  private weaponTimer = 0;
+  private weaponDuration = 0;
+  private powerUpSpawnTimer = 0;
   private lastTime = 0;
   private running = false;
   private shootTimer = 0;
@@ -107,6 +113,10 @@ export class Game {
         }
         for (const b of this.bullets) b.y += groundDelta;
         for (const b of this.enemyBullets) b.y += groundDelta;
+        for (const pu of this.powerUps) {
+          pu.y += groundDelta;
+          pu.baseY += groundDelta;
+        }
         // Shift terrain platforms
         for (const p of this.terrain.getPlatforms()) {
           p.y += groundDelta;
@@ -146,6 +156,10 @@ export class Game {
     this.bullets = [];
     this.enemies = [];
     this.enemyBullets = [];
+    this.powerUps = [];
+    this.currentWeapon = 'normal';
+    this.weaponTimer = 0;
+    this.powerUpSpawnTimer = 0;
     this.camera.x = 0;
     this.shootTimer = 0;
     this.survivalTimer = 0;
@@ -216,17 +230,48 @@ export class Game {
       }
     }
 
+    // Weapon timer
+    if (this.currentWeapon !== 'normal') {
+      this.weaponTimer += dt;
+      if (this.weaponTimer >= this.weaponDuration) {
+        this.currentWeapon = 'normal';
+        this.weaponTimer = 0;
+      }
+    }
+
     // Shooting
     const fireKey = this.input.isDown('KeyZ') || this.input.isDown('KeyJ');
+    const shootInterval = this.currentWeapon === 'rapid' ? 0.06 : SHOOT_INTERVAL;
     this.shootTimer += dt;
-    if (fireKey && this.shootTimer >= SHOOT_INTERVAL) {
+    if (fireKey && this.shootTimer >= shootInterval) {
       this.shootTimer = 0;
-      this.bullets.push(new Bullet(
-        this.player.centerX,
-        this.player.centerY,
-        this.player.aimAngle,
-        'player'
-      ));
+      const cx = this.player.centerX;
+      const cy = this.player.centerY;
+      const angle = this.player.aimAngle;
+
+      switch (this.currentWeapon) {
+        case 'spread':
+          // 3 bullets in a fan
+          this.bullets.push(new Bullet(cx, cy, angle - 0.25, 'player'));
+          this.bullets.push(new Bullet(cx, cy, angle, 'player'));
+          this.bullets.push(new Bullet(cx, cy, angle + 0.25, 'player'));
+          break;
+        case 'laser':
+          // Piercing bullet (we'll handle piercing in collision)
+          const laserBullet = new Bullet(cx, cy, angle, 'player');
+          (laserBullet as any).piercing = true;
+          this.bullets.push(laserBullet);
+          break;
+        case 'flame':
+          // Bigger, slower bullet that does 2 damage
+          const flameBullet = new Bullet(cx, cy, angle, 'player');
+          (flameBullet as any).damage = 2;
+          this.bullets.push(flameBullet);
+          break;
+        default: // normal and rapid
+          this.bullets.push(new Bullet(cx, cy, angle, 'player'));
+          break;
+      }
       this.audio.playSfx('shoot');
     }
 
@@ -254,12 +299,51 @@ export class Game {
       }
     }
 
+    // Spawn power-ups on elevated platforms
+    this.powerUpSpawnTimer += dt;
+    if (this.powerUpSpawnTimer >= 8) { // every 8 seconds
+      this.powerUpSpawnTimer = 0;
+      // Find an elevated platform ahead of the player that doesn't have a power-up
+      const eligiblePlatforms = this.terrain.getPlatforms().filter(p =>
+        !p.isGround &&
+        p.x > this.camera.x + this.camera.width * 0.5 &&
+        p.x < this.camera.x + this.camera.width + 200
+      );
+      if (eligiblePlatforms.length > 0) {
+        const plat = eligiblePlatforms[Math.floor(Math.random() * eligiblePlatforms.length)];
+        const types: WeaponType[] = ['spread', 'laser', 'rapid', 'flame'];
+        const type = types[Math.floor(Math.random() * types.length)];
+        // Check no existing power-up nearby
+        const tooClose = this.powerUps.some(p => Math.abs(p.x - plat.x) < 100);
+        if (!tooClose) {
+          this.powerUps.push(new PowerUp(plat.x + plat.width / 2 - 8, plat.y - 18, type));
+        }
+      }
+    }
+
+    // Update power-ups
+    this.powerUps.forEach(p => p.update(dt));
+    this.powerUps = this.powerUps.filter(p => p.alive && p.x > this.camera.x - 100);
+
+    // Player picks up power-up
+    for (const pu of this.powerUps) {
+      if (pu.alive && checkEntityCollision(this.player, pu)) {
+        pu.alive = false;
+        this.currentWeapon = pu.weaponType;
+        this.weaponTimer = 0;
+        this.weaponDuration = 10 + Math.random() * 5; // 10-15 seconds
+      }
+    }
+
     // Bullet vs Enemy collision
     for (const bullet of this.bullets) {
       for (const enemy of this.enemies) {
         if (bullet.alive && enemy.alive && checkEntityCollision(bullet, enemy)) {
-          bullet.alive = false;
-          (enemy as any).health--;
+          if (!(bullet as any).piercing) {
+            bullet.alive = false;
+          }
+          const damage = (bullet as any).damage || 1;
+          (enemy as any).health -= damage;
           if ((enemy as any).health <= 0) {
             enemy.alive = false;
             this.score.addKill((enemy as any).scoreValue || 10);
@@ -359,14 +443,33 @@ export class Game {
       }
     }
 
+    // Draw power-ups
+    for (const pu of this.powerUps) {
+      const sx = camera.toScreenX(pu.x);
+      // Glowing box
+      renderer.drawRect(sx - 2, pu.y - 2, 20, 20, 'rgba(255,255,255,0.3)');
+      renderer.drawRect(sx, pu.y, 16, 16, pu.getColor());
+      renderer.drawText(pu.getLabel(), sx + 4, pu.y + 13, '#ffffff', 12);
+    }
+
     // Draw player with sprite
     const playerSX = camera.toScreenX(this.player.x);
     this.renderer.drawSprite(PLAYER_STAND, playerSX, this.player.y, 2, !this.player.facingRight);
 
-    // Draw bullets with sprites
+    // Draw player bullets
     for (const b of this.bullets) {
       const sx = camera.toScreenX(b.x);
-      this.renderer.drawSprite(BULLET_PLAYER, sx, b.y, 2);
+      if ((b as any).piercing) {
+        // Laser: longer, blue
+        renderer.drawRect(sx, b.y, 12, 2, '#4488ff');
+        renderer.drawRect(sx, b.y - 1, 12, 4, 'rgba(68,136,255,0.4)');
+      } else if ((b as any).damage && (b as any).damage > 1) {
+        // Flame: bigger, orange
+        renderer.drawRect(sx, b.y - 2, 10, 7, '#ff8800');
+        renderer.drawRect(sx - 1, b.y - 1, 8, 5, '#ffaa00');
+      } else if (b.owner === 'player') {
+        renderer.drawRect(sx, b.y, 5, 3, '#ffff00');
+      }
     }
     for (const b of this.enemyBullets) {
       const sx = camera.toScreenX(b.x);
@@ -378,6 +481,15 @@ export class Game {
     renderer.drawText(`High: ${this.score.highScore}`, 10, 44, '#888888', 14);
     if (this.score.comboMultiplier > 1) {
       renderer.drawText(`x${this.score.comboMultiplier.toFixed(1)} COMBO`, 10, 64, '#ff0', 14);
+    }
+    if (this.currentWeapon !== 'normal') {
+      const remaining = Math.ceil(this.weaponDuration - this.weaponTimer);
+      const weaponNames: Record<string, string> = { spread: 'SPREAD', laser: 'LASER', rapid: 'RAPID', flame: 'FLAME' };
+      const weaponColors: Record<string, string> = { spread: '#ff4444', laser: '#4444ff', rapid: '#44ff44', flame: '#ff8800' };
+      renderer.drawText(
+        `${weaponNames[this.currentWeapon]} [${remaining}s]`,
+        10, 84, weaponColors[this.currentWeapon] || '#fff', 14
+      );
     }
 
     // Death screen
